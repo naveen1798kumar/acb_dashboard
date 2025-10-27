@@ -7,6 +7,7 @@ const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
+
   useEffect(() => {
     fetchOrders();
   }, []);
@@ -14,7 +15,8 @@ const Orders = () => {
   const fetchOrders = async () => {
     try {
       const { data } = await axios.get(`${API_BASE}/orders`);
-      setOrders(data);
+      // If backend returns {orders: [...]}, normalize it
+      setOrders(Array.isArray(data) ? data : data.orders || []);
     } catch (err) {
       console.error("Failed to load orders", err);
     }
@@ -25,7 +27,7 @@ const Orders = () => {
       <h1 className="text-2xl font-bold mb-4">Orders</h1>
 
       <div className="bg-white rounded shadow overflow-auto">
-        <table className="w-full">
+        <table className="w-full text-sm">
           <thead className="bg-gray-100">
             <tr>
               <th className="p-3 text-left">Order ID</th>
@@ -38,24 +40,42 @@ const Orders = () => {
           </thead>
           <tbody>
             {orders.map((o) => (
-              <tr key={o._id} className="border-t">
+              <tr key={o._id} className="border-t hover:bg-gray-50">
                 <td className="p-3">{o._id}</td>
                 <td className="p-3">
-                  {o.customer?.name} <div className="text-xs text-gray-500">{o.customer?.phone}</div>
+                  {o.customer?.name || "N/A"}{" "}
+                  <div className="text-xs text-gray-500">{o.customer?.phone}</div>
                 </td>
                 <td className="p-3">₹{o.total}</td>
-                <td className="p-3">{o.paymentStatus}</td>
-                <td className="p-3">{o.status}</td>
-                <td className="p-3 text-center">
-                  <Link to={`/orders/${o._id}`} className="text-blue-600 hover:underline">View</Link>
+                <td className="p-3 capitalize">{o.paymentStatus}</td>
+                <td
+                  className={`p-3 font-semibold ${
+                    o.status === "delivered"
+                      ? "text-green-600"
+                      : o.status === "cancelled"
+                      ? "text-red-600"
+                      : "text-yellow-600"
+                  }`}
+                >
+                  {o.status}
                 </td>
-                <td className={`px-4 py-2 border font-semibold ${
-                order.status === "Completed" ? "text-green-600" : "text-yellow-600"
-              }`}>
-                {order.status}
-              </td>
+                <td className="p-3 text-center">
+                  <Link
+                    to={`/orders/${o._id}`}
+                    className="text-blue-600 hover:underline"
+                  >
+                    View
+                  </Link>
+                </td>
               </tr>
             ))}
+            {orders.length === 0 && (
+              <tr>
+                <td colSpan={6} className="text-center p-6 text-gray-500">
+                  No orders found
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
