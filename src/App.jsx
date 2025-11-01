@@ -10,6 +10,7 @@ import OrderDetails from "./pages/OrderDetails";
 import Users from "./pages/users";
 import Login from "./pages/Login";
 import PrivateRoute from "./components/PrivateRoute";
+import UserOrders from "./pages/UserOrders";
 
 export default function App() {
   const handleLogout = () => {
@@ -144,6 +145,7 @@ export default function App() {
                       <Route path="/orders" element={<Orders />} />
                       <Route path="/orders/:id" element={<OrderDetails />} />
                       <Route path="/users" element={<Users />} />
+                      <Route path="/users/:id/orders" element={<UserOrders />} />
                     </Routes>
                   </main>
                 </div>

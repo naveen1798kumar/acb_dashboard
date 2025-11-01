@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { Link } from "react-router-dom";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -11,33 +12,25 @@ const Users = () => {
   useEffect(() => {
     const loadUsers = async () => {
       try {
-        const token = localStorage.getItem("token"); // ✅ get stored JWT
+        const token = localStorage.getItem("token");
         if (!token) {
-          console.warn("⚠️ No token found. Please log in first.");
           setError("No authentication token found. Please log in again.");
           setLoading(false);
           return;
         }
 
-        // ✅ Fetch all users from backend (admin route)
         const res = await axios.get(`${API_BASE}/users`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
 
-        // ✅ handle response format safely
         const userData = Array.isArray(res.data)
           ? res.data
           : res.data.users || [];
 
         setUsers(userData);
       } catch (err) {
-        console.error("❌ Failed to load users:", err.response?.data || err.message);
-        setError(
-          err.response?.data?.message ||
-            "Failed to fetch users. Please check your admin login."
-        );
+        console.error("❌ Failed to load users:", err);
+        setError("Failed to fetch users. Please check your admin login.");
       } finally {
         setLoading(false);
       }
@@ -64,6 +57,7 @@ const Users = () => {
                 <th className="px-4 py-2 border">Mobile</th>
                 <th className="px-4 py-2 border">Email</th>
                 <th className="px-4 py-2 border">Registered</th>
+                <th className="px-4 py-2 border">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -79,6 +73,14 @@ const Users = () => {
                     {u.createdAt
                       ? new Date(u.createdAt).toLocaleDateString()
                       : "—"}
+                  </td>
+                  <td className="px-4 py-2 border">
+                    <Link
+                      to={`/users/${u._id}/orders`}
+                      className="text-blue-600 hover:underline"
+                    >
+                      View Orders
+                    </Link>
                   </td>
                 </tr>
               ))}
