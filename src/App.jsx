@@ -1,4 +1,18 @@
 import { BrowserRouter as Router, Routes, Route, NavLink } from "react-router-dom";
+import { useState } from "react";
+
+import {
+  FiBox,
+  FiPlus,
+  FiTag,
+  FiGift,
+  FiFileText,
+  FiUsers,
+  FiMenu,
+  FiX,
+  FiLogOut,
+} from "react-icons/fi";
+
 import Products from "./pages/Products";
 import AddProduct from "./pages/AddProduct";
 import ProductDetails from "./pages/ProductDetails";
@@ -13,124 +27,88 @@ import PrivateRoute from "./components/PrivateRoute";
 import UserOrders from "./pages/UserOrders";
 
 export default function App() {
+  const [collapsed, setCollapsed] = useState(false);
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     window.location.href = "/login";
   };
 
+  const menuItems = [
+    { to: "/", label: "Products", icon: <FiBox /> },
+    { to: "/add", label: "Add Product", icon: <FiPlus /> },
+    { to: "/categories", label: "Categories", icon: <FiTag /> },
+    { to: "/events", label: "Events", icon: <FiGift /> },
+    { to: "/orders", label: "Orders", icon: <FiFileText /> },
+    { to: "/users", label: "Users", icon: <FiUsers /> },
+  ];
+
   return (
     <Router>
       <Routes>
-        {/* 🟢 Public Route */}
         <Route path="/login" element={<Login />} />
 
-        {/* 🔒 Protected Routes */}
         <Route
           path="/*"
           element={
             <PrivateRoute>
               <div className="flex min-h-screen bg-gray-100">
-                {/* Sidebar */}
-                <aside className="w-64 bg-white shadow-md">
-                  <div className="p-6 border-b border-gray-200">
-                    <h1 className="text-2xl font-bold text-red-600">ACB Dashboard</h1>
+
+                {/* SIDEBAR */}
+                <aside
+                  className={`bg-white shadow-lg transition-all duration-300 border-r 
+                    ${collapsed ? "w-20" : "w-64"}`}
+                >
+                  {/* Logo + Toggle */}
+                  <div className="p-5 flex items-center justify-between border-b">
+                    {!collapsed && (
+                      <h1 className="text-2xl font-bold text-red-600">ACB</h1>
+                    )}
+
+                    <button
+                      onClick={() => setCollapsed(!collapsed)}
+                      className="p-2 rounded-md hover:bg-gray-200"
+                    >
+                      {collapsed ? <FiMenu size={20} /> : <FiX size={20} />}
+                    </button>
                   </div>
 
-                  <nav className="mt-6 space-y-1">
-                    <NavLink
-                      to="/"
-                      end
-                      className={({ isActive }) =>
-                        `block px-6 py-3 text-sm font-medium rounded-lg ${
-                          isActive
-                            ? "bg-red-600 text-white"
-                            : "text-gray-700 hover:bg-gray-100"
-                        }`
-                      }
-                    >
-                      📦 Products
-                    </NavLink>
-
-                    <NavLink
-                      to="/add"
-                      className={({ isActive }) =>
-                        `block px-6 py-3 text-sm font-medium rounded-lg ${
-                          isActive
-                            ? "bg-red-600 text-white"
-                            : "text-gray-700 hover:bg-gray-100"
-                        }`
-                      }
-                    >
-                      ➕ Add Product
-                    </NavLink>
-
-                    <NavLink
-                      to="/categories"
-                      className={({ isActive }) =>
-                        `block px-6 py-3 text-sm font-medium rounded-lg ${
-                          isActive
-                            ? "bg-red-600 text-white"
-                            : "text-gray-700 hover:bg-gray-100"
-                        }`
-                      }
-                    >
-                      🏷️ Categories
-                    </NavLink>
-
-                    <NavLink
-                      to="/events"
-                      className={({ isActive }) =>
-                        `block px-6 py-3 text-sm font-medium rounded-lg ${
-                          isActive
-                            ? "bg-red-600 text-white"
-                            : "text-gray-700 hover:bg-gray-100"
-                        }`
-                      }
-                    >
-                      🎉 Events
-                    </NavLink>
-
-                    <NavLink
-                      to="/orders"
-                      className={({ isActive }) =>
-                        `block px-6 py-3 text-sm font-medium rounded-lg ${
-                          isActive
-                            ? "bg-red-600 text-white"
-                            : "text-gray-700 hover:bg-gray-100"
-                        }`
-                      }
-                    >
-                      🧾 Orders
-                    </NavLink>
-
-                    <NavLink
-                      to="/users"
-                      className={({ isActive }) =>
-                        `block px-6 py-3 text-sm font-medium rounded-lg ${
-                          isActive
-                            ? "bg-red-600 text-white"
-                            : "text-gray-700 hover:bg-gray-100"
-                        }`
-                      }
-                    >
-                      👤 Users
-                    </NavLink>
+                  {/* Nav Items */}
+                  <nav className="mt-4 space-y-1">
+                    {menuItems.map((item) => (
+                      <NavLink
+                        key={item.to}
+                        to={item.to}
+                        end
+                        className={({ isActive }) =>
+                          `flex items-center gap-3 px-5 py-3 rounded-lg mx-3 
+                           transition-all font-medium
+                           ${
+                             isActive
+                               ? "bg-red-600 text-white shadow-md"
+                               : "text-gray-700 hover:bg-gray-100"
+                           }`
+                        }
+                      >
+                        <span>{item.icon}</span>
+                        {!collapsed && <span>{item.label}</span>}
+                      </NavLink>
+                    ))}
                   </nav>
                 </aside>
 
-                {/* Main Content */}
+                {/* MAIN CONTENT */}
                 <div className="flex-1 flex flex-col">
+                  {/* HEADER */}
                   <header className="bg-white shadow px-6 py-4 flex justify-between items-center">
                     <h2 className="text-lg font-semibold text-gray-800">Admin Panel</h2>
-                    <div className="flex items-center space-x-4">
-                      <span className="text-gray-600">Admin</span>
-                      <button
-                        onClick={handleLogout}
-                        className="bg-red-600 text-white px-3 py-1 rounded-md hover:bg-red-700"
-                      >
-                        Logout
-                      </button>
-                    </div>
+
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center gap-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
+                    >
+                      <FiLogOut /> Logout
+                    </button>
                   </header>
 
                   <main className="flex-1 p-6">
@@ -148,6 +126,7 @@ export default function App() {
                       <Route path="/users/:id/orders" element={<UserOrders />} />
                     </Routes>
                   </main>
+
                 </div>
               </div>
             </PrivateRoute>
