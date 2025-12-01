@@ -32,7 +32,8 @@ import EventManager from "./pages/EventManager";
 import Orders from "./pages/Orders";
 import OrderDetails from "./pages/OrderDetails";
 import Login from "./pages/Login";
-import Users from "./pages/Users.jsx";
+// import Users from "./pages/Users.jsx";
+import UsersPage from "./pages/UsersPage.jsx";
 import PrivateRoute from "./components/PrivateRoute";
 import UserOrders from "./pages/UserOrders";
 
@@ -264,7 +265,7 @@ const DashboardLayout = () => {
             <Route path="/events/:id/manage" element={<EventManager />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/orders/:id" element={<OrderDetails />} />
-            <Route path="/users" element={<Users />} />
+            <Route path="/users" element={<UsersPage />} />
             <Route path="/users/:id/orders" element={<UserOrders />} />
           </Routes>
         </main>
