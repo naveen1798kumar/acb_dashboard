@@ -173,7 +173,7 @@ const Users = () => {
                     colSpan={5}
                     className="text-center p-8 text-slate-500 text-sm"
                   >
-                    No users registered yet.
+                    No users registered yet..
                   </td>
                 </tr>
               )}
