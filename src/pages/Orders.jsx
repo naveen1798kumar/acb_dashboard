@@ -7,7 +7,6 @@ const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:10000/api";
 const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
 
   useEffect(() => {
     fetchOrders();
@@ -15,131 +14,190 @@ const Orders = () => {
 
   const fetchOrders = async () => {
     try {
+      setLoading(true);
       const token = localStorage.getItem("token");
-      if (!token) {
-        console.error("No admin token found");
-        setError("Not authenticated as admin");
-        setLoading(false);
-        return;
-      }
 
       const { data } = await axios.get(`${API_BASE}/orders`, {
-        headers: {
-          Authorization: `Bearer ${token}`, // 🔑 admin JWT
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      // Backend can return either an array or { orders: [...] }
-      const normalizedOrders = Array.isArray(data) ? data : data.orders || [];
-      setOrders(normalizedOrders);
+      const normalized = Array.isArray(data) ? data : data.orders || [];
+      setOrders(normalized);
     } catch (err) {
       console.error("Failed to load orders", err.response?.data || err.message);
-      setError(err.response?.data?.message || "Failed to load orders");
     } finally {
       setLoading(false);
     }
   };
 
   const getStatusColor = (status) => {
-    if (status === "delivered") return "bg-green-100 text-green-700";
-    if (status === "cancelled") return "bg-red-100 text-red-700";
-    return "bg-yellow-100 text-yellow-700";
+    if (status === "delivered") return "bg-emerald-100 text-emerald-700 border-emerald-200";
+    if (status === "cancelled") return "bg-red-100 text-red-700 border-red-200";
+    if (status === "shipped" || status === "packed")
+      return "bg-blue-100 text-blue-700 border-blue-200";
+    return "bg-amber-100 text-amber-700 border-amber-200";
+  };
+
+  const getPaymentColor = (status) => {
+    if (status === "paid") return "bg-emerald-100 text-emerald-700 border-emerald-200";
+    if (status === "failed") return "bg-red-100 text-red-700 border-red-200";
+    return "bg-slate-100 text-slate-700 border-slate-200";
   };
 
   if (loading) {
     return (
-      <div className="p-6 bg-gray-50 min-h-screen text-gray-600">
-        Loading orders...
+      <div className="p-6 text-gray-600">
+        <div className="animate-pulse h-6 w-40 bg-gray-200 rounded mb-4" />
+        <div className="animate-pulse h-10 w-full bg-gray-200 rounded" />
       </div>
     );
   }
 
+  const totalRevenue = orders.reduce(
+    (sum, o) => sum + (Number(o.total ?? o.totalAmount ?? 0) || 0),
+    0
+  );
+
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <h1 className="text-2xl font-bold mb-4">Orders</h1>
-
-      {error && (
-        <div className="mb-4 p-3 rounded bg-red-100 text-red-700 text-sm">
-          {error}
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">Orders</h1>
+          <p className="text-sm text-slate-500">
+            Track all customer orders and their current status.
+          </p>
         </div>
-      )}
 
-      <div className="bg-white rounded-xl shadow overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-100 text-gray-700">
-            <tr>
-              <th className="p-3 text-left">Order ID</th>
-              <th className="p-3 text-left">Customer</th>
-              <th className="p-3 text-left">Total</th>
-              <th className="p-3 text-left">Payment</th>
-              <th className="p-3 text-left">Status</th>
-              <th className="p-3 text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orders.map((o) => (
-              <tr
-                key={o._id}
-                className="border-t hover:bg-gray-50 transition"
-              >
-                <td className="p-3 font-mono">{o._id}</td>
+        <div className="flex flex-wrap gap-3">
+          <div className="px-4 py-2 bg-white rounded-xl shadow-sm border border-slate-100">
+            <div className="text-xs uppercase tracking-wide text-slate-400">Total Orders</div>
+            <div className="text-lg font-semibold text-slate-900">{orders.length}</div>
+          </div>
+          <div className="px-4 py-2 bg-white rounded-xl shadow-sm border border-slate-100">
+            <div className="text-xs uppercase tracking-wide text-slate-400">Revenue</div>
+            <div className="text-lg font-semibold text-emerald-700">
+              ₹{totalRevenue.toLocaleString("en-IN")}
+            </div>
+          </div>
+        </div>
+      </div>
 
-                <td className="p-3">
-                  {o.customer?.name || "N/A"}
-                  <div className="text-xs text-gray-500">
-                    {o.customer?.phone || o.customer?.mobile || ""}
-                  </div>
-                </td>
+      {/* Table */}
+      <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-slate-700">All Orders</h2>
+          <span className="text-xs text-slate-400">
+            Latest first • {orders.length} record{orders.length !== 1 ? "s" : ""}
+          </span>
+        </div>
 
-                <td className="p-3 font-semibold">
-                  ₹{o.total ?? o.totalAmount ?? 0}
-                </td>
-
-                <td className="p-3 capitalize">
-                  <span
-                    className={`px-2 py-1 rounded-lg text-xs ${
-                      o.paymentStatus === "paid"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-yellow-100 text-yellow-700"
-                    }`}
-                  >
-                    {o.paymentStatus || "pending"}
-                  </span>
-                </td>
-
-                <td className="p-3">
-                  <span
-                    className={`px-2 py-1 rounded-lg text-xs font-semibold ${getStatusColor(
-                      o.status || "pending"
-                    )}`}
-                  >
-                    {o.status || "pending"}
-                  </span>
-                </td>
-
-                <td className="p-3 text-center">
-                  <Link
-                    to={`/orders/${o._id}`}
-                    className="text-blue-600 hover:underline"
-                  >
-                    View
-                  </Link>
-                </td>
-              </tr>
-            ))}
-
-            {orders.length === 0 && !error && (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 text-slate-600">
               <tr>
-                <td
-                  colSpan={6}
-                  className="text-center p-6 text-gray-500"
-                >
-                  No orders found
-                </td>
+                <th className="p-3 text-left font-medium">Order</th>
+                <th className="p-3 text-left font-medium">Customer</th>
+                <th className="p-3 text-left font-medium">Total</th>
+                <th className="p-3 text-left font-medium">Payment</th>
+                <th className="p-3 text-left font-medium">Status</th>
+                <th className="p-3 text-center font-medium">Actions</th>
               </tr>
-            )}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {orders.map((o, idx) => {
+                const isStriped = idx % 2 === 1;
+                const customer = o.customer || {};
+                return (
+                  <tr
+                    key={o._id}
+                    className={`transition-colors ${
+                      isStriped ? "bg-slate-50/40" : "bg-white"
+                    } hover:bg-slate-50`}
+                  >
+                    {/* Order ID + date */}
+                    <td className="p-3 align-top">
+                      <div className="font-mono text-xs text-slate-700 break-all">
+                        {o._id}
+                      </div>
+                      <div className="text-[11px] text-slate-400 mt-1">
+                        {o.createdAt
+                          ? new Date(o.createdAt).toLocaleString()
+                          : "No date"}
+                      </div>
+                    </td>
+
+                    {/* Customer */}
+                    <td className="p-3 align-top">
+                      <div className="font-medium text-slate-800">
+                        {customer.name || "Guest"}
+                      </div>
+                      {customer.phone && (
+                        <div className="text-xs text-slate-500">{customer.phone}</div>
+                      )}
+                      {customer.email && (
+                        <div className="text-xs text-slate-400">{customer.email}</div>
+                      )}
+                    </td>
+
+                    {/* Total */}
+                    <td className="p-3 align-top font-semibold text-slate-900">
+                      ₹{(o.total ?? o.totalAmount ?? 0).toLocaleString("en-IN")}
+                    </td>
+
+                    {/* Payment */}
+                    <td className="p-3 align-top">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] border ${getPaymentColor(
+                          o.paymentStatus
+                        )}`}
+                      >
+                        {o.paymentStatus || "pending"}
+                      </span>
+                      {o.paymentMethod && (
+                        <div className="text-[11px] text-slate-400 mt-1">
+                          {o.paymentMethod.toUpperCase()}
+                        </div>
+                      )}
+                    </td>
+
+                    {/* Status */}
+                    <td className="p-3 align-top">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] border font-medium ${getStatusColor(
+                          o.status
+                        )}`}
+                      >
+                        {o.status || "created"}
+                      </span>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="p-3 align-top text-center">
+                      <Link
+                        to={`/orders/${o._id}`}
+                        className="inline-flex items-center justify-center px-3 py-1.5 text-xs font-medium rounded-full border border-blue-100 bg-blue-50 text-blue-700 hover:bg-blue-100"
+                      >
+                        View details
+                      </Link>
+                    </td>
+                  </tr>
+                );
+              })}
+
+              {orders.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="text-center p-8 text-slate-500 text-sm"
+                  >
+                    No orders found yet.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

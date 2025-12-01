@@ -1,6 +1,14 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { Trash2, ImagePlus, Edit3, Save, X } from "lucide-react";
+import {
+  Trash2,
+  ImagePlus,
+  Edit3,
+  Save,
+  X,
+  FolderTree,
+  Tag,
+} from "lucide-react";
 
 const Categories = () => {
   const [categories, setCategories] = useState([]);
@@ -18,7 +26,8 @@ const Categories = () => {
   const [subName, setSubName] = useState({});
   const [addingSub, setAddingSub] = useState({});
 
-  const API_BASE = import.meta.env.VITE_API_URL;
+  const API_BASE =
+    import.meta.env.VITE_API_URL || "http://localhost:5000/api";
   const API_URL = `${API_BASE}/categories`;
 
   const fetchCategories = async () => {
@@ -35,16 +44,18 @@ const Categories = () => {
 
   useEffect(() => {
     fetchCategories();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleImageChange = (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     setImage(file || null);
     setImagePreview(file ? URL.createObjectURL(file) : null);
   };
 
   const addCategory = async () => {
     if (!name.trim()) return alert("Please enter a category name!");
+
     const formData = new FormData();
     formData.append("name", name.trim());
     if (image) formData.append("image", image);
@@ -88,8 +99,10 @@ const Categories = () => {
   };
 
   const saveEdit = async (id) => {
+    if (!editName.trim()) return alert("Category name cannot be empty!");
+
     const formData = new FormData();
-    formData.append("name", editName);
+    formData.append("name", editName.trim());
     if (editImage) formData.append("image", editImage);
 
     try {
@@ -108,10 +121,13 @@ const Categories = () => {
     if (!subcategoryName) return alert("Enter subcategory name!");
     try {
       setAddingSub((prev) => ({ ...prev, [categoryId]: true }));
-      const { data } = await axios.post(`${API_URL}/${categoryId}/subcategories`, {
-        name: subcategoryName,
-      });
-      setCategories((prev) => prev.map((cat) => (cat._id === categoryId ? data : cat)));
+      const { data } = await axios.post(
+        `${API_URL}/${categoryId}/subcategories`,
+        { name: subcategoryName }
+      );
+      setCategories((prev) =>
+        prev.map((cat) => (cat._id === categoryId ? data : cat))
+      );
       setSubName((prev) => ({ ...prev, [categoryId]: "" }));
     } catch (err) {
       alert(err.response?.data?.message || "Failed to add subcategory!");
@@ -121,156 +137,265 @@ const Categories = () => {
   };
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold text-gray-800">Manage Categories</h1>
-        {loading && <span className="text-sm text-gray-500 animate-pulse">Fetching categories...</span>}
-      </div>
+    <div className="space-y-6">
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-2xl bg-blue-50 flex items-center justify-center">
+            <FolderTree size={20} className="text-blue-600" />
+          </div>
+          <div>
+            <h1 className="text-xl md:text-2xl font-semibold text-slate-900 flex items-center gap-2">
+              Manage Categories
+            </h1>
+            <p className="text-xs md:text-sm text-slate-500">
+              Create, update and organise categories with subcategories &
+              images.
+            </p>
+          </div>
+        </div>
 
-      {/* Add Category */}
-      <div className="flex flex-col md:flex-row gap-4 mb-6 items-center">
-        <input
-          type="text"
-          placeholder="Category name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="border border-gray-300 p-3 rounded-lg flex-1 focus:ring-2 focus:ring-blue-500 focus:outline-none"
-        />
-        <label className="cursor-pointer flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-lg border border-blue-200 text-blue-700 hover:bg-blue-100 transition">
-          <ImagePlus size={18} />
-          Upload Image
-          <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
-        </label>
-        {imagePreview && (
-          <img
-            src={imagePreview}
-            alt="preview"
-            className="w-14 h-14 object-cover rounded-lg border border-gray-200"
-          />
+        {loading && (
+          <span className="inline-flex items-center gap-2 text-xs md:text-sm px-3 py-1.5 rounded-full bg-slate-100 text-slate-600">
+            <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+            Fetching categories...
+          </span>
         )}
-        <button
-          onClick={addCategory}
-          disabled={adding}
-          className={`px-5 py-3 rounded-lg text-white font-medium shadow transition 
-            ${adding ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"}`}
-        >
-          {adding ? "Adding..." : "Add Category"}
-        </button>
       </div>
 
-      {/* Category List */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      {/* ADD CATEGORY CARD */}
+      <div className="bg-white border border-slate-200/70 rounded-2xl shadow-sm p-4 md:p-5 space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Tag size={18} className="text-blue-600" />
+            <h2 className="text-sm md:text-base font-semibold text-slate-900">
+              Add New Category
+            </h2>
+          </div>
+          {categories.length > 0 && (
+            <span className="text-xs text-slate-500">
+              Total:{" "}
+              <span className="font-semibold text-slate-700">
+                {categories.length}
+              </span>
+            </span>
+          )}
+        </div>
+
+        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+          {/* Name input */}
+          <div className="w-full lg:flex-1">
+            <label className="block text-xs font-medium text-slate-600 mb-1.5">
+              Category Name
+            </label>
+            <input
+              type="text"
+              placeholder="e.g., Cakes, Breads, Snacks..."
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-slate-50/50"
+            />
+          </div>
+
+          {/* Upload + Preview */}
+          <div className="flex items-center gap-4">
+            <label className="cursor-pointer inline-flex items-center gap-2 bg-blue-50 px-4 py-2 rounded-lg border border-blue-100 text-xs md:text-sm text-blue-700 hover:bg-blue-100 transition">
+              <ImagePlus size={16} />
+              Upload Image
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="hidden"
+              />
+            </label>
+
+            {imagePreview && (
+              <div className="relative">
+                <img
+                  src={imagePreview}
+                  alt="preview"
+                  className="w-14 h-14 object-cover rounded-xl border border-slate-200 shadow-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setImagePreview(null);
+                    setImage(null);
+                  }}
+                  className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[10px] text-red-500 shadow-sm"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Add button */}
+          <button
+            onClick={addCategory}
+            disabled={adding}
+            className={`w-full lg:w-auto px-5 py-2.5 rounded-lg text-xs md:text-sm font-semibold text-white shadow-sm transition 
+              ${
+                adding
+                  ? "bg-slate-400 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700"
+              }`}
+          >
+            {adding ? "Adding..." : "Add Category"}
+          </button>
+        </div>
+      </div>
+
+      {/* CATEGORY GRID */}
+      <div className="bg-white border border-slate-200/70 rounded-2xl shadow-sm p-4 md:p-5">
         {categories.length === 0 ? (
-          <p className="text-gray-500 text-center py-6">
-            {loading ? "Loading..." : "No categories yet."}
-          </p>
+          <div className="py-10 flex flex-col items-center justify-center text-slate-500 text-sm">
+            {loading ? "Loading categories..." : "No categories created yet."}
+          </div>
         ) : (
-          <ul>
+          <div className="grid gap-4 md:gap-5 md:grid-cols-2 xl:grid-cols-3">
             {categories.map((c) => (
-              <li key={c._id} className="px-4 py-4 border-b last:border-none hover:bg-gray-50 transition">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    {c.image && (
+              <div
+                key={c._id}
+                className="rounded-2xl border border-slate-200 bg-slate-50/60 hover:bg-slate-50 transition shadow-sm p-4 flex flex-col gap-3"
+              >
+                {/* Top Row: Image + Name + Actions */}
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    {c.image ? (
                       <img
                         src={c.image}
                         alt={c.name}
-                        className="w-14 h-14 object-cover rounded-md border border-gray-200"
-                      />
-                    )}
-
-                    {editingId === c._id ? (
-                      <input
-                        type="text"
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                        className="border p-2 rounded-lg w-48 focus:ring-2 focus:ring-blue-500"
+                        className="w-14 h-14 object-cover rounded-xl border border-slate-200 shadow-sm"
                       />
                     ) : (
-                      <span className="text-gray-800 font-semibold text-lg">{c.name}</span>
+                      <div className="w-14 h-14 rounded-xl border border-dashed border-slate-300 flex items-center justify-center text-[11px] text-slate-400 bg-white">
+                        No Image
+                      </div>
                     )}
+
+                    <div>
+                      {editingId === c._id ? (
+                        <input
+                          type="text"
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          className="border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+                        />
+                      ) : (
+                        <h3 className="text-sm md:text-base font-semibold text-slate-900">
+                          {c.name}
+                        </h3>
+                      )}
+
+                      {c.subcategories?.length > 0 && (
+                        <p className="text-[11px] text-slate-500 mt-1">
+                          {c.subcategories.length} subcategories
+                        </p>
+                      )}
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-col items-end gap-1 text-[11px]">
                     {editingId === c._id ? (
                       <>
-                        <label className="cursor-pointer text-blue-600 flex items-center gap-1">
-                          <ImagePlus size={16} />
+                        <label className="cursor-pointer text-blue-600 flex items-center gap-1 hover:text-blue-700">
+                          <ImagePlus size={14} />
+                          <span>Change</span>
                           <input
                             type="file"
                             accept="image/*"
-                            onChange={(e) => setEditImage(e.target.files[0] || null)}
+                            onChange={(e) =>
+                              setEditImage(e.target.files?.[0] || null)
+                            }
                             className="hidden"
                           />
                         </label>
-                        <button
-                          onClick={() => saveEdit(c._id)}
-                          className="text-green-600 hover:text-green-800 flex items-center gap-1 text-sm"
-                        >
-                          <Save size={16} /> Save
-                        </button>
-                        <button
-                          onClick={cancelEdit}
-                          className="text-gray-600 hover:text-gray-800 flex items-center gap-1 text-sm"
-                        >
-                          <X size={16} /> Cancel
-                        </button>
+                        <div className="flex items-center gap-1 mt-1">
+                          <button
+                            onClick={() => saveEdit(c._id)}
+                            className="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-700"
+                          >
+                            <Save size={14} />
+                            <span>Save</span>
+                          </button>
+                          <button
+                            onClick={cancelEdit}
+                            className="inline-flex items-center gap-1 text-slate-500 hover:text-slate-700"
+                          >
+                            <X size={14} />
+                            <span>Cancel</span>
+                          </button>
+                        </div>
                       </>
                     ) : (
                       <>
                         <button
                           onClick={() => startEdit(c)}
-                          className="text-blue-600 hover:text-blue-800 flex items-center gap-1 text-sm"
+                          className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700"
                         >
-                          <Edit3 size={16} /> Edit
+                          <Edit3 size={14} />
+                          <span>Edit</span>
                         </button>
                         <button
                           onClick={() => deleteCategory(c._id)}
-                          className="text-red-600 hover:text-red-800 flex items-center gap-1 text-sm"
+                          className="inline-flex items-center gap-1 text-red-600 hover:text-red-700"
                         >
-                          <Trash2 size={16} /> Remove
+                          <Trash2 size={14} />
+                          <span>Remove</span>
                         </button>
                       </>
                     )}
                   </div>
                 </div>
 
-                {/* Subcategories */}
-                <div className="ml-4 mt-3">
-                  <div className="flex gap-2 items-center mb-2">
+                {/* Subcategories chips */}
+                {c.subcategories?.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    {c.subcategories.map((sc, idx) => (
+                      <span
+                        key={idx}
+                        className="px-2 py-1 rounded-full bg-white border border-slate-200 text-[11px] text-slate-700"
+                      >
+                        {sc.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add Subcategory inline */}
+                <div className="pt-2 border-t border-slate-200 mt-2">
+                  <div className="flex items-center gap-2 mt-2">
                     <input
                       type="text"
                       placeholder="Add subcategory..."
                       value={subName[c._id] || ""}
                       onChange={(e) =>
-                        setSubName((prev) => ({ ...prev, [c._id]: e.target.value }))
+                        setSubName((prev) => ({
+                          ...prev,
+                          [c._id]: e.target.value,
+                        }))
                       }
-                      className="border p-2 rounded w-1/2"
+                      className="flex-1 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
                     />
                     <button
                       onClick={() => addSubcategory(c._id)}
                       disabled={addingSub[c._id]}
-                      className={`px-3 py-1 rounded text-white text-sm ${
-                        addingSub[c._id] ? "bg-gray-400" : "bg-green-600 hover:bg-green-700"
-                      }`}
+                      className={`px-3 py-1.5 rounded-lg text-[11px] font-medium text-white
+                        ${
+                          addingSub[c._id]
+                            ? "bg-slate-400 cursor-not-allowed"
+                            : "bg-emerald-600 hover:bg-emerald-700"
+                        }`}
                     >
                       {addingSub[c._id] ? "Adding..." : "Add"}
                     </button>
                   </div>
-
-                  {c.subcategories?.length > 0 && (
-                    <ul className="ml-2">
-                      {c.subcategories.map((sc, idx) => (
-                        <li key={idx} className="text-gray-700 text-sm">
-                          • {sc.name}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
                 </div>
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </div>
     </div>

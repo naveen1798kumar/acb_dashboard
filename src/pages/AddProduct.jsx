@@ -2,8 +2,20 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useParams, useNavigate } from "react-router-dom";
+import {
+  PackagePlus,
+  Tags,
+  ImageUp,
+  ListPlus,
+  Sparkles,
+} from "lucide-react";
 
-const AddProduct = ({ onProductAdded, isInlineAdd = false, eventId = null, onCancelEdit = null }) => {
+const AddProduct = ({
+  onProductAdded,
+  isInlineAdd = false,
+  eventId = null,
+  onCancelEdit = null,
+}) => {
   const { id } = useParams(); // Edit mode if id exists in URL
   const navigate = useNavigate();
 
@@ -21,11 +33,14 @@ const AddProduct = ({ onProductAdded, isInlineAdd = false, eventId = null, onCan
   const [categories, setCategories] = useState([]);
   const [newCategory, setNewCategory] = useState("");
   const [imagePreview, setImagePreview] = useState(null);
-  const [variants, setVariants] = useState([{ label: "", price: "", stock: "" }]);
+  const [variants, setVariants] = useState([
+    { label: "", price: "", stock: "" },
+  ]);
 
-  const API_BASE = import.meta.env.VITE_API_URL;
+  const API_BASE =
+    import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
-  // Fetch categories
+  // 🔹 Fetch categories
   useEffect(() => {
     const fetchCategoriesData = async () => {
       try {
@@ -37,9 +52,9 @@ const AddProduct = ({ onProductAdded, isInlineAdd = false, eventId = null, onCan
       }
     };
     fetchCategoriesData();
-  }, []);
+  }, [API_BASE]);
 
-  // Fetch product in edit mode
+  // 🔹 Fetch product in edit mode
   useEffect(() => {
     if (id) {
       const fetchProduct = async () => {
@@ -52,17 +67,21 @@ const AddProduct = ({ onProductAdded, isInlineAdd = false, eventId = null, onCan
       };
       fetchProduct();
     }
-  }, [id]);
+  }, [id, API_BASE]);
 
-  // Prefill form if editing
+  // 🔹 Prefill form if editing / inline add
   useEffect(() => {
     if (editProduct && categories.length > 0) {
-      const categoryObj = categories.find(cat => cat.name === editProduct.category);
+      const categoryObj = categories.find(
+        (cat) => cat.name === editProduct.category
+      );
 
       setForm({
         name: editProduct.name || "",
         category: editProduct.category || "",
-        subcategory: categoryObj?.subcategories?.some(sub => sub.name === editProduct.subcategory)
+        subcategory: categoryObj?.subcategories?.some(
+          (sub) => sub.name === editProduct.subcategory
+        )
           ? editProduct.subcategory
           : "",
         newSubcategory: "",
@@ -71,34 +90,54 @@ const AddProduct = ({ onProductAdded, isInlineAdd = false, eventId = null, onCan
         isTopSelling: editProduct.isTopSelling || false,
       });
 
-      setVariants(editProduct.variants?.length ? editProduct.variants : [{ label: "", price: "", stock: "" }]);
+      setVariants(
+        editProduct.variants?.length
+          ? editProduct.variants
+          : [{ label: "", price: "", stock: "" }]
+      );
       setImagePreview(editProduct.image || null);
     } else if (isInlineAdd) {
       setForm((f) => ({ ...f, category: "Special Events" }));
     }
   }, [editProduct, categories, isInlineAdd]);
 
+  // 🔹 Generic change handler
   const handleChange = (e) => {
     const { name, value, type, checked, files } = e.target;
-    if (type === "file" && files[0]) {
-      setForm({ ...form, image: files[0] });
+
+    if (type === "file" && files?.[0]) {
+      setForm((prev) => ({ ...prev, image: files[0] }));
       setImagePreview(URL.createObjectURL(files[0]));
-    } else {
-      setForm({ ...form, [name]: type === "checkbox" ? checked : value });
+      return;
     }
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
   };
 
+  // 🔹 Variant helpers
   const handleVariantChange = (i, field, value) => {
-    setVariants(prev => prev.map((v, idx) => (idx === i ? { ...v, [field]: value } : v)));
+    setVariants((prev) =>
+      prev.map((v, idx) => (idx === i ? { ...v, [field]: value } : v))
+    );
   };
-  const addVariant = () => setVariants([...variants, { label: "", price: "", stock: "" }]);
-  const removeVariant = (i) => setVariants(variants.filter((_, idx) => idx !== i));
 
+  const addVariant = () =>
+    setVariants((prev) => [...prev, { label: "", price: "", stock: "" }]);
+
+  const removeVariant = (i) =>
+    setVariants((prev) => prev.filter((_, idx) => idx !== i));
+
+  // 🔹 Add new category
   const handleAddCategory = async () => {
     if (!newCategory.trim()) return alert("Enter a valid category name");
     try {
-      const { data } = await axios.post(`${API_BASE}/categories`, { name: newCategory.trim() });
-      setCategories(prev => [...prev, data]);
+      const { data } = await axios.post(`${API_BASE}/categories`, {
+        name: newCategory.trim(),
+      });
+      setCategories((prev) => [...prev, data]);
       setNewCategory("");
       alert("✅ Category added successfully!");
     } catch (error) {
@@ -107,21 +146,30 @@ const AddProduct = ({ onProductAdded, isInlineAdd = false, eventId = null, onCan
     }
   };
 
+  // 🔹 Submit handler
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       const formData = new FormData();
+
       Object.entries(form).forEach(([k, v]) => {
-        if (v !== null && v !== undefined && k !== "newSubcategory") formData.append(k, v);
+        if (k === "newSubcategory") return; // not sent as field
+        if (v !== null && v !== undefined) formData.append(k, v);
       });
+
       formData.append("variants", JSON.stringify(variants));
       if (eventId) formData.append("eventId", eventId);
 
       let response;
+
       if (editProduct?._id) {
-        response = await axios.put(`${API_BASE}/products/${editProduct._id}`, formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        response = await axios.put(
+          `${API_BASE}/products/${editProduct._id}`,
+          formData,
+          {
+            headers: { "Content-Type": "multipart/form-data" },
+          }
+        );
         alert("✅ Product updated successfully!");
       } else {
         response = await axios.post(`${API_BASE}/products`, formData, {
@@ -130,6 +178,7 @@ const AddProduct = ({ onProductAdded, isInlineAdd = false, eventId = null, onCan
         alert("✅ Product added successfully!");
       }
 
+      // Link new product to event if inline add
       if (isInlineAdd && eventId && response?.data?._id && !editProduct?._id) {
         await axios.put(`${API_BASE}/events/${eventId}`, {
           $push: { products: response.data._id },
@@ -151,259 +200,393 @@ const AddProduct = ({ onProductAdded, isInlineAdd = false, eventId = null, onCan
 
       onProductAdded?.();
       onCancelEdit?.();
-      if (id) navigate("/");
+      if (id && !isInlineAdd) navigate("/");
     } catch (error) {
       console.error("❌ Error saving product:", error);
       alert("❌ Failed to save product");
     }
   };
 
+  // 🔹 Current category object (for subcategories)
+  const currentCategoryObj = categories.find(
+    (cat) => cat.name === form.category
+  );
+
   return (
-    <div className={`p-6 rounded-xl shadow-lg border ${isInlineAdd ? "bg-white" : "bg-gray-50 max-w-2xl mx-auto mt-6"}`}>
-      <div className="flex justify-between items-center mb-5">
-        <h2 className="text-xl font-bold text-gray-800">
-          {editProduct ? "✏️ Edit Product" : "➕ Add New Product"}
-        </h2>
+    <div
+      className={`rounded-2xl border shadow-sm ${
+        isInlineAdd
+          ? "bg-white p-5"
+          : "bg-slate-50 p-6 max-w-3xl mx-auto mt-6"
+      }`}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between gap-3 mb-6">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center">
+            <PackagePlus className="text-blue-600" size={20} />
+          </div>
+          <div>
+            <h2 className="text-lg md:text-xl font-semibold text-slate-900 flex items-center gap-2">
+              {editProduct ? "Edit Product" : "Add New Product"}
+              {!editProduct && (
+                <Sparkles className="text-amber-500" size={16} />
+              )}
+            </h2>
+            <p className="text-xs md:text-sm text-slate-500">
+              {editProduct
+                ? "Update details, variants and category mapping."
+                : "Create a new product with variants, image and categories."}
+            </p>
+          </div>
+        </div>
+
         {editProduct && onCancelEdit && (
-          <button type="button" onClick={onCancelEdit} className="text-sm text-gray-600 hover:text-red-500">
+          <button
+            type="button"
+            onClick={onCancelEdit}
+            className="text-xs md:text-sm text-slate-500 hover:text-red-500 font-medium"
+          >
             Cancel
           </button>
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Product Name */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
-          <input
-            type="text"
-            name="name"
-            value={form.name}
-            onChange={handleChange}
-            placeholder="Enter product name"
-            className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-500"
-            required
-          />
-        </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* 1. Basic Info */}
+        <section className="bg-white rounded-2xl border border-slate-200/70 p-4 md:p-5 space-y-4">
+          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+            <ListPlus size={16} className="text-blue-600" />
+            Basic Details
+          </h3>
 
-        {/* Category & Subcategory */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+          <div className="grid md:grid-cols-1 gap-4">
+            {/* Product Name */}
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1.5">
+                Product Name<span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={form.name}
+                onChange={handleChange}
+                placeholder="Enter product name"
+                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-slate-50/50"
+                required
+              />
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1.5">
+                Description
+              </label>
+              <textarea
+                name="description"
+                value={form.description}
+                onChange={handleChange}
+                placeholder="Write a short description..."
+                rows={3}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-slate-50/50 resize-none"
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* 2. Category / Subcategory */}
+        <section className="bg-white rounded-2xl border border-slate-200/70 p-4 md:p-5 space-y-4">
+          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+            <Tags size={16} className="text-blue-600" />
+            Categories & Subcategories
+          </h3>
+
           {isInlineAdd ? (
-            <input
-              type="text"
-              name="category"
-              value="Special Events"
-              readOnly
-              className="w-full border p-3 rounded-lg bg-gray-100 text-gray-600"
-            />
+            <div>
+              <label className="block text-xs font-medium text-slate-600 mb-1.5">
+                Category
+              </label>
+              <input
+                type="text"
+                name="category"
+                value="Special Events"
+                readOnly
+                className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm bg-slate-100 text-slate-600"
+              />
+            </div>
           ) : (
             <>
-              {/* Select Category */}
-              <select
-                name="category"
-                value={form.category || ""}
-                onChange={(e) =>
-                  setForm({ ...form, category: e.target.value, subcategory: "" })
-                }
-                className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-500"
-                required
-              >
-                <option value="">-- Select Category --</option>
-                {categories.map((cat) => (
-                  <option key={cat._id} value={cat.name}>
-                    {cat.name.charAt(0).toUpperCase() + cat.name.slice(1)}
-                  </option>
-                ))}
-              </select>
-
-              {/* Select Subcategory */}
-              {form.category && (
-                <select
-                  name="subcategory"
-                  value={form.subcategory || ""}
-                  onChange={(e) => setForm({ ...form, subcategory: e.target.value })}
-                  className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-500 mt-2"
-                  required
-                >
-                  <option value="">-- Select Subcategory --</option>
-                  {categories
-                    .find((cat) => cat.name === form.category)
-                    ?.subcategories?.map((subcat, idx) => (
-                      <option key={idx} value={subcat.name}>{subcat.name}</option>
+              {/* Category select */}
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-slate-600 mb-1.5">
+                    Category<span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="category"
+                    value={form.category || ""}
+                    onChange={(e) =>
+                      setForm((prev) => ({
+                        ...prev,
+                        category: e.target.value,
+                        subcategory: "",
+                      }))
+                    }
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-slate-50/50"
+                    required
+                  >
+                    <option value="">-- Select Category --</option>
+                    {categories.map((cat) => (
+                      <option key={cat._id} value={cat.name}>
+                        {cat.name.charAt(0).toUpperCase() + cat.name.slice(1)}
+                      </option>
                     ))}
-                </select>
-              )}
+                  </select>
+                </div>
 
-              {/* Add New Subcategory */}
+                {/* Subcategory select */}
+                {form.category && (
+                  <div>
+                    <label className="block text-xs font-medium text-slate-600 mb-1.5">
+                      Subcategory<span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      name="subcategory"
+                      value={form.subcategory || ""}
+                      onChange={(e) =>
+                        setForm((prev) => ({
+                          ...prev,
+                          subcategory: e.target.value,
+                        }))
+                      }
+                      className="w-full border border-slate-200 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-slate-50/50"
+                      required
+                    >
+                      <option value="">-- Select Subcategory --</option>
+                      {currentCategoryObj?.subcategories?.map(
+                        (subcat, idx) => (
+                          <option key={idx} value={subcat.name}>
+                            {subcat.name}
+                          </option>
+                        )
+                      )}
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              {/* Add new subcategory */}
               {form.category && (
-                <div className="flex items-center gap-2 mt-2">
+                <div className="flex flex-col md:flex-row gap-2 mt-2">
                   <input
                     type="text"
                     value={form.newSubcategory || ""}
                     onChange={(e) =>
-                      setForm({ ...form, newSubcategory: e.target.value })
+                      setForm((prev) => ({
+                        ...prev,
+                        newSubcategory: e.target.value,
+                      }))
                     }
                     placeholder="Add new subcategory..."
-                    className="flex-1 border p-2 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-slate-50/50"
                   />
                   <button
                     type="button"
                     onClick={async () => {
-                      if (!form.newSubcategory?.trim()) return alert("Enter subcategory name!");
+                      if (!form.newSubcategory?.trim()) {
+                        return alert("Enter subcategory name!");
+                      }
 
                       try {
+                        const categoryId = currentCategoryObj?._id;
+                        if (!categoryId)
+                          return alert("Category not found in list.");
+
                         const { data } = await axios.post(
-                          `${API_BASE}/categories/${
-                            categories.find((cat) => cat.name === form.category)._id
-                          }/subcategories`,
+                          `${API_BASE}/categories/${categoryId}/subcategories`,
                           { name: form.newSubcategory.trim() }
                         );
 
                         // Update categories state
-                        setCategories(prev =>
+                        setCategories((prev) =>
                           prev.map((cat) =>
-                            cat.name === form.category ? data : cat
+                            cat._id === categoryId ? data : cat
                           )
                         );
 
                         // Auto-select new subcategory
-                        setForm({
-                          ...form,
-                          subcategory: form.newSubcategory.trim(),
+                        setForm((prev) => ({
+                          ...prev,
+                          subcategory: prev.newSubcategory.trim(),
                           newSubcategory: "",
-                        });
+                        }));
 
                         alert("✅ Subcategory added successfully!");
                       } catch (err) {
-                        alert(err.response?.data?.message || "Failed to add subcategory!");
+                        alert(
+                          err.response?.data?.message ||
+                            "Failed to add subcategory!"
+                        );
                       }
                     }}
-                    className="px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
+                    className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs md:text-sm font-medium hover:bg-emerald-700"
                   >
-                    + Add
+                    + Add Subcategory
                   </button>
                 </div>
               )}
 
-              {/* Add New Category Inline */}
-              <div className="flex items-center gap-2 mt-3">
+              {/* Add new category inline */}
+              <div className="flex flex-col md:flex-row gap-2 mt-3">
                 <input
                   type="text"
                   value={newCategory}
                   onChange={(e) => setNewCategory(e.target.value)}
                   placeholder="Add new category..."
-                  className="flex-1 border p-2 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-slate-50/50"
                 />
                 <button
                   type="button"
                   onClick={handleAddCategory}
-                  className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg text-xs md:text-sm font-medium hover:bg-blue-700"
                 >
-                  + Add
+                  + Add Category
                 </button>
               </div>
             </>
           )}
-        </div>
 
-        {/* Description */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-          <textarea
-            name="description"
-            value={form.description}
-            onChange={handleChange}
-            placeholder="Write a short description..."
-            rows="3"
-            className="w-full border p-3 rounded-lg focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        {/* Image Upload */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Product Image</label>
-          <div className="flex items-center gap-4">
+          {/* Top Selling toggle */}
+          <div className="flex items-center gap-2 pt-2">
             <input
-              type="file"
-              name="image"
-              accept="image/*"
+              type="checkbox"
+              name="isTopSelling"
+              checked={form.isTopSelling}
               onChange={handleChange}
-              className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="h-4 w-4 text-blue-600 rounded border-slate-300"
             />
+            <span className="text-xs md:text-sm text-slate-700">
+              Mark as <span className="font-medium">Top Selling</span> product
+            </span>
+          </div>
+        </section>
+
+        {/* 3. Image Upload */}
+        <section className="bg-white rounded-2xl border border-slate-200/70 p-4 md:p-5 space-y-4">
+          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+            <ImageUp size={16} className="text-blue-600" />
+            Product Image
+          </h3>
+
+          <div className="flex flex-col md:flex-row items-start gap-4">
+            <div className="w-full md:flex-1">
+              <label className="block text-xs font-medium text-slate-600 mb-1.5">
+                Upload Image
+              </label>
+              <input
+                type="file"
+                name="image"
+                accept="image/*"
+                onChange={handleChange}
+                className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-slate-50/50 cursor-pointer"
+              />
+            </div>
+
             {imagePreview && (
               <div className="relative">
-                <img src={imagePreview} alt="preview" className="w-16 h-16 object-cover rounded-md border" />
+                <img
+                  src={imagePreview}
+                  alt="preview"
+                  className="w-20 h-20 object-cover rounded-xl border border-slate-200 shadow-sm"
+                />
                 <button
                   type="button"
-                  onClick={() => setImagePreview(null)}
-                  className="absolute top-0 right-0 text-red-600 bg-white rounded-full px-1 text-xs"
+                  onClick={() => {
+                    setImagePreview(null);
+                    setForm((prev) => ({ ...prev, image: null }));
+                  }}
+                  className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-white border border-slate-200 flex items-center justify-center text-[10px] text-red-500 shadow-sm"
                 >
                   ✕
                 </button>
               </div>
             )}
           </div>
-        </div>
+        </section>
 
-        {/* Top Selling */}
-        <div className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            name="isTopSelling"
-            checked={form.isTopSelling}
-            onChange={handleChange}
-            className="h-5 w-5 text-blue-600 rounded"
-          />
-          <span className="text-gray-700">Mark as Top Selling</span>
-        </div>
+        {/* 4. Variants */}
+        <section className="bg-white rounded-2xl border border-slate-200/70 p-4 md:p-5 space-y-4">
+          <h3 className="text-sm font-semibold text-slate-900 flex items-center gap-2">
+            <ListPlus size={16} className="text-blue-600" />
+            Product Variants
+          </h3>
 
-        {/* Variants */}
-        <div className="border-t pt-4 mt-4">
-          <h3 className="font-semibold text-gray-800 mb-3">Product Variants</h3>
-          {variants.map((v, idx) => (
-            <div key={idx} className="grid grid-cols-3 gap-3 mb-3 items-center">
-              <input
-                type="text"
-                placeholder="Label (e.g., 500g, 1kg)"
-                value={v.label}
-                onChange={(e) => handleVariantChange(idx, "label", e.target.value)}
-                className="border p-2 rounded-lg focus:ring-2 focus:ring-blue-500"
-                required
-              />
-              <input
-                type="number"
-                placeholder="Price (₹)"
-                value={v.price}
-                onChange={(e) => handleVariantChange(idx, "price", e.target.value)}
-                className="border p-2 rounded-lg focus:ring-2 focus:ring-blue-500"
-                required
-              />
-              <div className="flex items-center gap-2">
+          <div className="space-y-3">
+            {variants.map((v, idx) => (
+              <div
+                key={idx}
+                className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center rounded-xl border border-slate-200 bg-slate-50/60 p-3"
+              >
                 <input
-                  type="number"
-                  placeholder="Stock"
-                  value={v.stock}
-                  onChange={(e) => handleVariantChange(idx, "stock", e.target.value)}
-                  className="border p-2 rounded-lg w-full focus:ring-2 focus:ring-blue-500"
+                  type="text"
+                  placeholder="Label (e.g., 500g, 1kg)"
+                  value={v.label}
+                  onChange={(e) =>
+                    handleVariantChange(idx, "label", e.target.value)
+                  }
+                  className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
                   required
                 />
-                {variants.length > 1 && (
-                  <button type="button" onClick={() => removeVariant(idx)} className="text-red-600 text-sm hover:underline">
-                    ✕
-                  </button>
-                )}
+                <input
+                  type="number"
+                  placeholder="Price (₹)"
+                  value={v.price}
+                  onChange={(e) =>
+                    handleVariantChange(idx, "price", e.target.value)
+                  }
+                  className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white"
+                  required
+                />
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    placeholder="Stock"
+                    value={v.stock}
+                    onChange={(e) =>
+                      handleVariantChange(idx, "stock", e.target.value)
+                    }
+                    className="border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none bg-white flex-1"
+                    required
+                  />
+                  {variants.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeVariant(idx)}
+                      className="text-xs text-red-500 hover:underline"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
-          <button type="button" onClick={addVariant} className="text-blue-600 text-sm mt-1 hover:underline">
+            ))}
+          </div>
+
+          <button
+            type="button"
+            onClick={addVariant}
+            className="inline-flex items-center gap-2 text-xs md:text-sm text-blue-600 hover:text-blue-700 font-medium"
+          >
             + Add Another Variant
           </button>
-        </div>
+        </section>
 
-        {/* Submit */}
-        <div className="pt-4">
-          <button type="submit" className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium">
+        {/* Submit Button */}
+        <div className="pt-2">
+          <button
+            type="submit"
+            className="w-full py-3 rounded-xl bg-blue-600 text-white text-sm md:text-base font-semibold hover:bg-blue-700 active:scale-[0.99] transition-transform"
+          >
             {editProduct ? "Update Product" : "Add Product"}
           </button>
         </div>
