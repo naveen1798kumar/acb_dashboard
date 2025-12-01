@@ -31,8 +31,8 @@ import Events from "./pages/Events";
 import EventManager from "./pages/EventManager";
 import Orders from "./pages/Orders";
 import OrderDetails from "./pages/OrderDetails";
-import Users from "./pages/Users";
 import Login from "./pages/Login";
+import Users from "./pages/Users.jsx";
 import PrivateRoute from "./components/PrivateRoute";
 import UserOrders from "./pages/UserOrders";
 
