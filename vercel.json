@@ -1,25 +1,9 @@
 {
   "version": 2,
-  "builds": [
+  "rewrites": [
     {
-      "src": "index.js",
-      "use": "@vercel/node"
+      "source": "/(.*)",
+      "destination": "/"
     }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/index.js"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
-  ],
-  "env": {
-    "PORT": "10000",
-    "NODE_ENV": "development",
-    "MONGO_URI": "mongodb+srv://cybersocsolutions24_db_user:1yokfOjpLux1sdlz@acbdashboard.jma4cdy.mongodb.net/acbdashboard?retryWrites=true&w=majority&appName=acbdashboard",
-    "JWT_SECRET": "9f1c2b5e4d6a7c8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e"
-  }
+  ]
 }
