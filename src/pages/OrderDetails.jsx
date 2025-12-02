@@ -26,6 +26,14 @@ const OrderDetails = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  // 🔹 INR formatter
+  const formatInr = (value) =>
+    new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0,
+    }).format(Number(value) || 0);
+
   useEffect(() => {
     if (id) {
       fetchOrder();
@@ -144,6 +152,10 @@ const OrderDetails = () => {
   const total = order.total ?? order.totalAmount ?? 0;
   const paymentStatus = order.paymentStatus || "pending";
 
+  // ⚠️ This expects backend to attach payment object to order
+  const payment =
+    order.payment || order.paymentDetails || order.paymentInfo || null;
+
   const statusColorMap = {
     created: "bg-slate-100 text-slate-700 border-slate-200",
     confirmed: "bg-blue-50 text-blue-700 border-blue-200",
@@ -245,7 +257,7 @@ const OrderDetails = () => {
           </div>
         </div>
 
-        {/* RIGHT: ORDER SUMMARY / STATUS UPDATE / ITEMS */}
+        {/* RIGHT: ORDER SUMMARY / STATUS UPDATE / PAYMENT / ITEMS */}
         <div className="space-y-4 lg:col-span-2">
           {/* Order Info */}
           <div className="bg-white rounded-2xl border border-slate-200/70 shadow-sm p-4">
@@ -264,7 +276,7 @@ const OrderDetails = () => {
                   Subtotal
                 </p>
                 <p className="font-semibold text-slate-900">
-                  ₹{subtotal}
+                  {formatInr(subtotal)}
                 </p>
               </div>
               <div>
@@ -272,7 +284,7 @@ const OrderDetails = () => {
                   Shipping
                 </p>
                 <p className="font-semibold text-slate-900">
-                  ₹{order.shipping ?? 0}
+                  {formatInr(order.shipping ?? 0)}
                 </p>
               </div>
               <div>
@@ -280,7 +292,7 @@ const OrderDetails = () => {
                   Total
                 </p>
                 <p className="font-semibold text-slate-900">
-                  ₹{total}
+                  {formatInr(total)}
                 </p>
               </div>
               <div>
@@ -329,6 +341,75 @@ const OrderDetails = () => {
               </div>
             </div>
           </div>
+
+          {/* 🔹 PAYMENT DETAILS (Razorpay) */}
+          {payment && (
+            <div className="bg-white rounded-2xl border border-slate-200/70 shadow-sm p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="h-8 w-8 rounded-xl bg-slate-100 flex items-center justify-center">
+                  <CreditCard size={18} className="text-slate-700" />
+                </div>
+                <h3 className="text-sm font-semibold text-slate-900">
+                  Payment Details
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-xs text-slate-500 uppercase tracking-wide">
+                    Payment Status
+                  </p>
+                  <span
+                    className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] border mt-1 ${
+                      paymentColorMap[payment.status] ||
+                      paymentColorMap[paymentStatus] ||
+                      "bg-slate-50 text-slate-700 border-slate-200"
+                    }`}
+                  >
+                    {payment.status || paymentStatus}
+                  </span>
+                </div>
+
+                <div>
+                  <p className="text-xs text-slate-500 uppercase tracking-wide">
+                    Amount
+                  </p>
+                  <p className="font-semibold text-slate-900 mt-1">
+                    {formatInr(payment.amount ?? total)}
+                  </p>
+                </div>
+
+                <div className="md:col-span-1">
+                  <p className="text-xs text-slate-500 uppercase tracking-wide">
+                    Razorpay Order ID
+                  </p>
+                  <p className="font-mono text-xs text-slate-800 mt-1 break-all">
+                    {payment.razorpayOrderId || "—"}
+                  </p>
+                </div>
+
+                <div className="md:col-span-1">
+                  <p className="text-xs text-slate-500 uppercase tracking-wide">
+                    Razorpay Payment ID
+                  </p>
+                  <p className="font-mono text-xs text-slate-800 mt-1 break-all">
+                    {payment.razorpayPaymentId || "—"}
+                  </p>
+                </div>
+
+                <div className="md:col-span-2">
+                  <p className="text-xs text-slate-500 uppercase tracking-wide">
+                    Payment Time
+                  </p>
+                  <p className="text-xs text-slate-800 mt-1">
+                    {payment.createdAt
+                      ? new Date(payment.createdAt).toLocaleString()
+                      : "N/A"}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* ITEMS WITH IMAGES */}
           <div className="bg-white rounded-2xl border border-slate-200/70 shadow-sm p-4">
@@ -385,10 +466,12 @@ const OrderDetails = () => {
 
                       {/* PRICE / QTY / TOTAL */}
                       <div className="flex flex-col items-end text-xs md:text-sm gap-0.5">
-                        <span className="text-slate-700">₹{price}</span>
+                        <span className="text-slate-700">
+                          {formatInr(price)}
+                        </span>
                         <span className="text-slate-500">× {qty}</span>
                         <span className="font-semibold text-slate-900">
-                          ₹{lineTotal}
+                          {formatInr(lineTotal)}
                         </span>
                       </div>
                     </div>

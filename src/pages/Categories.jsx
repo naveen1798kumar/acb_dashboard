@@ -9,6 +9,7 @@ import {
   FolderTree,
   Tag,
 } from "lucide-react";
+import toast from "react-hot-toast";
 
 const Categories = () => {
   const [categories, setCategories] = useState([]);
@@ -37,6 +38,7 @@ const Categories = () => {
       setCategories(Array.isArray(data) ? data : data.categories || []);
     } catch (err) {
       console.error("❌ Error fetching categories:", err);
+      toast.error("Failed to fetch categories. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -54,7 +56,10 @@ const Categories = () => {
   };
 
   const addCategory = async () => {
-    if (!name.trim()) return alert("Please enter a category name!");
+    if (!name.trim()) {
+      toast.error("Please enter a category name.");
+      return;
+    }
 
     const formData = new FormData();
     formData.append("name", name.trim());
@@ -69,20 +74,28 @@ const Categories = () => {
       setName("");
       setImage(null);
       setImagePreview(null);
+      toast.success("Category added successfully.");
     } catch (err) {
-      alert(err.response?.data?.message || "Error adding category!");
+      console.error("Error adding category:", err);
+      toast.error(
+        err.response?.data?.message || "Error adding category. Try again."
+      );
     } finally {
       setAdding(false);
     }
   };
 
   const deleteCategory = async (id) => {
-    if (!window.confirm("Delete this category?")) return;
+    const ok = window.confirm("Delete this category?");
+    if (!ok) return;
+
     try {
       await axios.delete(`${API_URL}/${id}`);
       setCategories((prev) => prev.filter((c) => c._id !== id));
+      toast.success("Category deleted.");
     } catch (err) {
-      alert("Failed to delete category!");
+      console.error("Error deleting category:", err);
+      toast.error("Failed to delete category. Try again.");
     }
   };
 
@@ -99,7 +112,10 @@ const Categories = () => {
   };
 
   const saveEdit = async (id) => {
-    if (!editName.trim()) return alert("Category name cannot be empty!");
+    if (!editName.trim()) {
+      toast.error("Category name cannot be empty.");
+      return;
+    }
 
     const formData = new FormData();
     formData.append("name", editName.trim());
@@ -110,15 +126,21 @@ const Categories = () => {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setCategories((prev) => prev.map((c) => (c._id === id ? data : c)));
+      toast.success("Category updated successfully.");
       cancelEdit();
     } catch (err) {
-      alert("Failed to update category!");
+      console.error("Error updating category:", err);
+      toast.error("Failed to update category. Try again.");
     }
   };
 
   const addSubcategory = async (categoryId) => {
     const subcategoryName = subName[categoryId]?.trim();
-    if (!subcategoryName) return alert("Enter subcategory name!");
+    if (!subcategoryName) {
+      toast.error("Enter a subcategory name.");
+      return;
+    }
+
     try {
       setAddingSub((prev) => ({ ...prev, [categoryId]: true }));
       const { data } = await axios.post(
@@ -129,8 +151,12 @@ const Categories = () => {
         prev.map((cat) => (cat._id === categoryId ? data : cat))
       );
       setSubName((prev) => ({ ...prev, [categoryId]: "" }));
+      toast.success("Subcategory added.");
     } catch (err) {
-      alert(err.response?.data?.message || "Failed to add subcategory!");
+      console.error("Error adding subcategory:", err);
+      toast.error(
+        err.response?.data?.message || "Failed to add subcategory. Try again."
+      );
     } finally {
       setAddingSub((prev) => ({ ...prev, [categoryId]: false }));
     }

@@ -9,6 +9,7 @@ import {
   ListPlus,
   Sparkles,
 } from "lucide-react";
+import toast from "react-hot-toast";
 
 const AddProduct = ({
   onProductAdded,
@@ -49,6 +50,7 @@ const AddProduct = ({
         else if (Array.isArray(data.categories)) setCategories(data.categories);
       } catch (err) {
         console.error("❌ Error fetching categories:", err);
+        toast.error("Failed to load categories.");
       }
     };
     fetchCategoriesData();
@@ -63,6 +65,7 @@ const AddProduct = ({
           setEditProduct(data);
         } catch (err) {
           console.error("❌ Error fetching product:", err);
+          toast.error("Failed to load product for editing.");
         }
       };
       fetchProduct();
@@ -132,17 +135,23 @@ const AddProduct = ({
 
   // 🔹 Add new category
   const handleAddCategory = async () => {
-    if (!newCategory.trim()) return alert("Enter a valid category name");
+    if (!newCategory.trim()) {
+      toast.error("Enter a valid category name.");
+      return;
+    }
     try {
       const { data } = await axios.post(`${API_BASE}/categories`, {
         name: newCategory.trim(),
       });
       setCategories((prev) => [...prev, data]);
       setNewCategory("");
-      alert("✅ Category added successfully!");
+      toast.success("Category added successfully.");
     } catch (error) {
       console.error("❌ Error adding category:", error);
-      alert("Failed to add category. It might already exist.");
+      toast.error(
+        error.response?.data?.message ||
+          "Failed to add category. It might already exist."
+      );
     }
   };
 
@@ -170,19 +179,24 @@ const AddProduct = ({
             headers: { "Content-Type": "multipart/form-data" },
           }
         );
-        alert("✅ Product updated successfully!");
+        toast.success("Product updated successfully.");
       } else {
         response = await axios.post(`${API_BASE}/products`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
-        alert("✅ Product added successfully!");
+        toast.success("Product added successfully.");
       }
 
       // Link new product to event if inline add
       if (isInlineAdd && eventId && response?.data?._id && !editProduct?._id) {
-        await axios.put(`${API_BASE}/events/${eventId}`, {
-          $push: { products: response.data._id },
-        });
+        try {
+          await axios.put(`${API_BASE}/events/${eventId}`, {
+            $push: { products: response.data._id },
+          });
+        } catch (err) {
+          console.error("❌ Error linking product to event:", err);
+          toast.error("Product saved, but failed to link to event.");
+        }
       }
 
       // Reset form
@@ -203,7 +217,9 @@ const AddProduct = ({
       if (id && !isInlineAdd) navigate("/");
     } catch (error) {
       console.error("❌ Error saving product:", error);
-      alert("❌ Failed to save product");
+      toast.error(
+        error.response?.data?.message || "Failed to save product. Try again."
+      );
     }
   };
 
@@ -394,13 +410,16 @@ const AddProduct = ({
                     type="button"
                     onClick={async () => {
                       if (!form.newSubcategory?.trim()) {
-                        return alert("Enter subcategory name!");
+                        toast.error("Enter subcategory name.");
+                        return;
                       }
 
                       try {
                         const categoryId = currentCategoryObj?._id;
-                        if (!categoryId)
-                          return alert("Category not found in list.");
+                        if (!categoryId) {
+                          toast.error("Category not found in list.");
+                          return;
+                        }
 
                         const { data } = await axios.post(
                           `${API_BASE}/categories/${categoryId}/subcategories`,
@@ -421,11 +440,12 @@ const AddProduct = ({
                           newSubcategory: "",
                         }));
 
-                        alert("✅ Subcategory added successfully!");
+                        toast.success("Subcategory added successfully.");
                       } catch (err) {
-                        alert(
+                        console.error("❌ Error adding subcategory:", err);
+                        toast.error(
                           err.response?.data?.message ||
-                            "Failed to add subcategory!"
+                            "Failed to add subcategory."
                         );
                       }
                     }}

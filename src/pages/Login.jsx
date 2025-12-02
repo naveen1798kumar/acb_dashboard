@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { Mail, Lock, ShieldCheck, Loader2 } from "lucide-react";
+import toast from "react-hot-toast";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
@@ -16,20 +17,29 @@ const Login = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setErrorMsg("");
 
+    if (!email || !password) {
+      toast.error("Please enter both email and password.");
+      return;
+    }
+
     try {
+      setLoading(true);
+
       const res = await axios.post(`${API_BASE}/auth/admin-login`, {
         email,
         password,
       });
 
       localStorage.setItem("token", res.data.token);
+      toast.success("Admin logged in successfully.");
       navigate("/");
     } catch (err) {
-      const msg = err.response?.data?.message || "Login failed. Please try again.";
+      const msg =
+        err.response?.data?.message || "Login failed. Please try again.";
       setErrorMsg(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

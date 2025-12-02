@@ -12,6 +12,7 @@ import {
   XCircle,
   ImagePlus,
 } from "lucide-react";
+import toast from "react-hot-toast";
 
 const Events = () => {
   const [events, setEvents] = useState([]);
@@ -41,6 +42,7 @@ const Events = () => {
     } catch (err) {
       console.error("❌ Error fetching events:", err);
       setEvents([]);
+      toast.error("Failed to fetch events. Please try again.");
     } finally {
       setInitialLoading(false);
     }
@@ -55,7 +57,11 @@ const Events = () => {
   const handleSubmit = async (e) => {
     e?.preventDefault?.();
     const { name, description, startDate, endDate, image } = formData;
-    if (!name.trim()) return alert("Event name is required!");
+
+    if (!name.trim()) {
+      toast.error("Event name is required.");
+      return;
+    }
 
     const form = new FormData();
     form.append("name", name.trim());
@@ -66,22 +72,26 @@ const Events = () => {
 
     try {
       setLoading(true);
+
       if (editingEvent) {
         await axios.put(`${API_URL}/${editingEvent._id}`, form, {
           headers: { "Content-Type": "multipart/form-data" },
         });
-        alert("✅ Event updated successfully!");
+        toast.success("Event updated successfully.");
       } else {
         await axios.post(API_URL, form, {
           headers: { "Content-Type": "multipart/form-data" },
         });
-        alert("✅ Event added successfully!");
+        toast.success("Event added successfully.");
       }
+
       resetForm();
       fetchEvents();
     } catch (err) {
       console.error("❌ Error saving event:", err);
-      alert("Failed to save event.");
+      toast.error(
+        err.response?.data?.message || "Failed to save event. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -105,9 +115,10 @@ const Events = () => {
     try {
       await axios.delete(`${API_URL}/${id}`);
       setEvents((prev) => prev.filter((e) => e._id !== id));
+      toast.success("Event deleted successfully.");
     } catch (err) {
       console.error("❌ Error deleting event:", err);
-      alert("Failed to delete event.");
+      toast.error("Failed to delete event. Please try again.");
     }
   };
 
@@ -121,8 +132,12 @@ const Events = () => {
       setEvents((prev) =>
         prev.map((e) => (e._id === event._id ? updated : e))
       );
+      toast.success(
+        updated.isActive ? "Event marked as Active." : "Event marked as Inactive."
+      );
     } catch (err) {
       console.error("❌ Error toggling event:", err);
+      toast.error("Failed to update event status.");
     }
   };
 
@@ -143,6 +158,7 @@ const Events = () => {
   // ✅ Cancel Editing
   const cancelEdit = () => {
     resetForm();
+    toast("Edit cancelled.", { icon: "↩️" });
   };
 
   const handleImageChange = (file) => {

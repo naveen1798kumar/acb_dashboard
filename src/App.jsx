@@ -22,6 +22,7 @@ import {
 } from "react-icons/fi";
 
 import { motion } from "framer-motion";
+import { Toaster } from "react-hot-toast";
 
 import Products from "./pages/Products";
 import AddProduct from "./pages/AddProduct";
@@ -93,12 +94,14 @@ const DashboardLayout = () => {
         {/* Gradient Glow Background */}
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(248,113,113,0.35),_transparent_60%),_radial-gradient(circle_at_bottom,_rgba(59,130,246,0.22),_transparent_60%)] opacity-60" />
 
-        {/* Sidebar Header (no logo image here now) */}
+        {/* Sidebar Header */}
         <div className="relative h-18 px-4 py-3 flex items-center justify-between border-b border-slate-800/80">
           <div className="flex items-center gap-3 overflow-hidden">
-            {!collapsed && (<div className="h-9 w-9 rounded-2xl bg-gradient-to-tr from-red-500 to-rose-500 flex items-center justify-center text-xs font-semibold shadow-lg shadow-red-500/40">
-              ACB
-            </div>)}
+            {!collapsed && (
+              <div className="h-9 w-9 rounded-2xl bg-gradient-to-tr from-red-500 to-rose-500 flex items-center justify-center text-xs font-semibold shadow-lg shadow-red-500/40">
+                ACB
+              </div>
+            )}
             {!collapsed && (
               <div className="leading-tight">
                 <p className="text-sm font-semibold text-slate-50">
@@ -169,10 +172,7 @@ const DashboardLayout = () => {
 
               {/* Logo + Title in TOPBAR */}
               <div className="flex items-center gap-3">
-                <Link
-                  to="/"
-                  className="relative flex items-center gap-3 group"
-                >
+                <Link to="/" className="relative flex items-center gap-3 group">
                   {/* Icon logo in topbar */}
                   <motion.div
                     className="relative flex items-center justify-center"
@@ -217,16 +217,18 @@ const DashboardLayout = () => {
             </div>
 
             <div className="flex items-center gap-3">
-          <div className="relative mt-auto h-12 w-full flex items-center px-4 pb-4">
-          {!collapsed && (
-            <div className="flex items-center justify-between w-full text-[11px] text-slate-400">
-              <span className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 shadow shadow-emerald-400/60" />
-                <span>Admin online</span>
-              </span>
-            </div>
-          )}
-        </div>
+              {/* (This "Admin online" block here is probably duplicated, but keeping as-is) */}
+              <div className="relative mt-auto h-12 w-full flex items-center px-4 pb-4">
+                {!collapsed && (
+                  <div className="flex items-center justify-between w-full text-[11px] text-slate-400">
+                    <span className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-emerald-400 shadow shadow-emerald-400/60" />
+                      <span>Admin online</span>
+                    </span>
+                  </div>
+                )}
+              </div>
+
               {/* Admin Chip */}
               <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200">
                 <div className="h-6 w-6 rounded-full bg-gradient-to-tr from-red-500 to-rose-500 text-xs font-semibold text-white flex items-center justify-center">
@@ -277,6 +279,31 @@ const DashboardLayout = () => {
 export default function App() {
   return (
     <Router>
+      {/* Global dashboard toaster */}
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          style: {
+            borderRadius: "0.75rem",
+            background: "#020617",
+            color: "#e5e7eb",
+            fontSize: "0.85rem",
+          },
+          success: {
+            iconTheme: {
+              primary: "#22c55e",
+              secondary: "#020617",
+            },
+          },
+          error: {
+            iconTheme: {
+              primary: "#ef4444",
+              secondary: "#020617",
+            },
+          },
+        }}
+      />
+
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route
